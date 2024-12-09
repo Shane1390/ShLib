@@ -1,9 +1,9 @@
 SHLIB.SQL.Config = {
     Host = "localhost",
-    Username = "test",
-    Password = "test",
-    Database = "test",
+    Username = "",
+    Password = "",
+    Database = "",
     Port = 3306,
 
-    UseMySQL = true
+    UseMySQL = false
 }
