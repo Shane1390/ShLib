@@ -9,7 +9,7 @@ ShLib also provides a wrapper for vgui.RegisterPanel, so that your panels can au
 Check the test project for a real example of how ShLib can enrich your workflow and provide real value.
 
 ## Example
-This is the current flow you need to follow to request information from the server
+### This is the current flow you need to follow to request information from the server
 
 Client
 ```lua
@@ -36,7 +36,8 @@ net.Receive("DemoNetStr", function(_, ply)
 end)
 ```
 
-This is that same request but with ShLib:
+### This is that same request but with ShLib:
+
 Client
 ```lua
 local result, str = SHLIB.Client:DemoNetStr("test")
