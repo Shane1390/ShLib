@@ -9,6 +9,8 @@ ShLib also provides a wrapper for vgui.RegisterPanel, so that your panels can au
 Check the test project for a real example of how ShLib can enrich your workflow and provide real value.
 
 ## Example
+See the test project for more examples!
+
 ### This is the current flow you need to follow to request information from the server
 
 Client
@@ -121,7 +123,7 @@ trans.Access = {
 ```
 
 ### Controller
-Now that we have a request defined, we need to implement it
+Now that we have a request defined, we need to implement it. Each implementation must always return 1 value - the success/failure of the request. If a return type is defined for that request, a return value must also be provided.
 
 Below, we have the implementation from the test project:
 ```lua
@@ -143,4 +145,17 @@ This is an example of an action implementation:
 SHLIB.Net:ImplementAction("OpenPlayerMenu", function()
     OpenPlayerMenu()
 end)
+```
+
+### Other built-in functionality
+ShLib does have some other general-purpose methods that can be found in the utils folder. There's matrix rotations, a convenient detouring implementation, entity creation and the singleton panels.
+
+Singleton panels are useful, so you don't need to constantly pass around panel references to a "master" panel, you can simply define it as a singleton as such:
+```lua
+SHLIB:RegisterSingletonPanel(self)
+```
+
+And then anywhere in your code, you can access it as such:
+```lua
+SHLIB:GetSingletonPanel("<PanelClass>")
 ```
