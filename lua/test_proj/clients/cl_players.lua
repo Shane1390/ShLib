@@ -1,3 +1,3 @@
-SHLIB.Net:ImplementAction("OpenPlayerMenu", function(path)
+SHLIB.Net:ImplementAction("OpenPlayerMenu", function()
     OpenPlayerMenu()
 end)
