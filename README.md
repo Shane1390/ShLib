@@ -33,7 +33,7 @@ net.Receive("DemoNetStr", function(_, ply)
     local result = net.ReadString()
 
     net.Start("DemoNetStr")
-        net.WriteString(ply)
+        net.WriteString(result)
     net.Send(ply)
 end)
 ```
@@ -48,7 +48,7 @@ local result, str = SHLIB.Client:DemoNetStr("test")
 Server
 ```lua
 SHLIB.Net:ImplementRequest("DemoNetStr", function(ply, str)
-    return str
+    return true, str
 end)
 ```
 
