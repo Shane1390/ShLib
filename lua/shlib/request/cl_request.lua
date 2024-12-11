@@ -9,7 +9,6 @@ SHLIB.Client = SHLIB.Client or {}
 local requests = SHLIB.Net.Requests
 local endpoints = SHLIB.Net.Endpoints
 local trans = SHLIB.Net.Trans
-local types = SHLIB.Net.Types
 
 local function CreateThreadTimeout(id)
     timer.Create(SHLIB.Net.RequestString .. id, SHLIB.Net.Timeout, 1, function()
@@ -32,7 +31,7 @@ end
 function SHLIB:SendRequest(name, ...)
     local syncVar = GetSyncVar()
     local endpoint = endpoints[name]
-    
+
     net.Start(SHLIB.Net.RequestString)
         trans:WriteClientHeader(name, syncVar)
         if endpoint.ArgType then endpoint.ArgType.Write(...) end
@@ -46,7 +45,7 @@ end
 net.Receive(SHLIB.Net.RequestString, function()
     local request = trans.ReadResponseHeader()
     local tbl = requests[request.Id]
-    
+
     if request then
         local success = request.Status == trans.Status.Success
         local ret = success and tbl.ReturnFunc and tbl.ReturnFunc()

@@ -3,9 +3,6 @@ SHLIB.Net.Types = SHLIB.Net.Types or {}
 
 util.AddNetworkString(SHLIB.Net.ActionString)
 
-local actions = SHLIB.Actions
-local types = SHLIB.Net.Types
-
 function SHLIB.Net:RegisterAction(name, argType)
     SHLIB.Actions[name] = function(_, ply, arg)
         net.Start(SHLIB.Net.ActionString)

@@ -13,7 +13,7 @@ end
 
 function SHLIB:InitializeDatabase()
     local dbIf, dbConnectStatus
-    
+
     if SHLIB.SQL.Config.UseMySQL then
         dbIf = include("shlib/db/sv_mysql.lua")
         dbConnectStatus = AttemptDBConnect(dbIf)

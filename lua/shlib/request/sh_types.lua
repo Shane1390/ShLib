@@ -78,7 +78,7 @@ end
 
 local function GetKeys(schema)
     local keys = {}
-    
+
     for key in pairs(schema) do
         table.insert(keys, key)
     end
@@ -105,7 +105,7 @@ end
 local function CreateType(name, read, write)
     local readList = function() return ReadList(read) end
     local writeList = function(tbl) WriteList(tbl, write) end
-    
+
     types[name] = { Read = read, Write = write }
     types[name .. "List"] = { Read = readList, Write = writeList }
 end

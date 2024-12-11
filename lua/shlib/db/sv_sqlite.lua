@@ -1,5 +1,4 @@
 local SQL = {}
-local dbConnection
 
 function SQL:Connect()
     return true
@@ -18,7 +17,7 @@ function SQL:Query(query)
 end
 
 function SQL:Escape(query)
-    return sql.SQLStr(query)
+    return sql.SQLStr(query):Trim("'")
 end
 
 function SQL:QueryInsert(query)
