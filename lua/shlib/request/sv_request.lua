@@ -13,7 +13,7 @@ local function HandleRequest(ply)
     if trans.Access[tbl.AccessLevel](ply) then
         local request = tbl.ArgType and tbl.ArgType.Read()
         local status, response = tbl.Implementation(ply, request)
-        
+
         net.Start(SHLIB.Net.RequestString)
             trans:WriteResponseHeader(header.ClID, status and trans.Status.Success or trans.Status.ServerError)
             -- Don't network DB errors to the client
@@ -31,13 +31,14 @@ net.Receive(SHLIB.Net.RequestString, function(_, ply)
 end)
 
 function SHLIB.Net:RegisterRequest(name, accessLevel, argType, retType)
-    requests[name] = {
-        AccessLevel = accessLevel,
-        ArgType = argType,
-        RetType = retType
-    }
+    requests[name] = requests[name] or {}
+
+    requests[name].AccessLevel = accessLevel
+    requests[name].ArgType = argType
+    requests[name].RetType = retType
 end
 
 function SHLIB.Net:ImplementRequest(name, impl)
+    requests[name] = requests[name] or {}
     requests[name].Implementation = impl
 end
