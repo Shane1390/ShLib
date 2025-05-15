@@ -27,5 +27,5 @@ end
 SHLIB:IncludeFolder("shlib_config")
 SHLIB:IncludeFolder("shlib")
 
--- Test Project
-SHLIB:IncludeFolder("test_proj")
+-- This hook should be used to interface with ShLib
+hook.Run("SHLIB_Initialize")

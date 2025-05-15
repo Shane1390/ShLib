@@ -1,11 +1,12 @@
 SHLIB.Actions = SHLIB.Actions or {}
 SHLIB.Net.Types = SHLIB.Net.Types or {}
 
-util.AddNetworkString(SHLIB.Net.ActionString)
+local actionStr = SHLIB.Config.ActionString
+util.AddNetworkString(actionStr)
 
 function SHLIB.Net:RegisterAction(name, argType)
     SHLIB.Actions[name] = function(_, ply, arg)
-        net.Start(SHLIB.Net.ActionString)
+        net.Start(actionStr)
             net.WriteString(name)
             if argType then argType.Write(arg) end
         -- Broadcast if no ply provided

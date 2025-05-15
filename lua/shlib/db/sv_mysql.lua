@@ -5,16 +5,16 @@ local dbConnection
 
 function SQL:Connect()
     local running = coroutine.running()
-    local dbConfig = SHLIB.SQL.Config
+    local dbConfig = SHLIB.Config.SQL
     local db = mysqloo.connect(dbConfig.Host, dbConfig.Username, dbConfig.Password, dbConfig.Database, dbConfig.Port)
 
     function db:onConnected()
         dbConnection = self
-        coroutine.resume(running, true)
+        SHLIB:ResumeThread(running, true)
     end
 
     function db:onConnectionFailed(err)
-        coroutine.resume(running, false, err)
+        SHLIB:ResumeThread(running, false, err)
     end
 
     db:connect()
@@ -25,12 +25,12 @@ local function HandleAsync(dbObj)
     local running = coroutine.running()
 
     function dbObj:onSuccess(data)
-        coroutine.resume(running, true, data)
+        SHLIB:ResumeThread(running, true, data)
     end
 
     function dbObj:onError(err)
         print("DB Error: " .. err)
-        coroutine.resume(running, false, err)
+        SHLIB:ResumeThread(running, false, err)
     end
 
     dbObj:start()
@@ -46,17 +46,14 @@ function SQL:Query(query)
     return HandleAsync(queryObj)
 end
 
-local function GetID(idData)
-    return idData[2][1].InsertID
-end
-
 function SQL:QueryInsert(query)
-    local transObj = dbConnection:createTransaction()
-    transObj:addQuery(CreateQueryObj(query))
-    transObj:addQuery(CreateQueryObj([[SELECT LAST_INSERT_ID() AS InsertID]]))
+    local dbObj = CreateQueryObj(query)
 
-    local result, idData = HandleAsync(transObj)
-    return result, result and GetID(idData)
+    local result, data = HandleAsync(dbObj)
+    if not result then return result, data end
+
+    dbObj:getNextResults()
+    return result, dbObj:getData()[1]["LAST_INSERT_ID()"]
 end
 
 function SQL:Escape(query)

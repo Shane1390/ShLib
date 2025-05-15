@@ -43,6 +43,12 @@ function SHLIB:SetupDatabaseTables()
     end
 end
 
+function SHLIB:SetupDatabaseTables()
+    for _, tbl in ipairs(tables) do
+        self:CreateDatabaseTable(tbl.Name, tbl.Query)
+    end
+end
+
 function SHLIB:AddDatabaseTable(name, query)
     table.insert(tables, { Name = name, Query = query })
 end
@@ -52,6 +58,7 @@ local function Initialize()
         hook.Run("SHLIB_RegisterDatabaseTables")
 
         SHLIB:InitializeDatabase()
+        SHLIB.ORM:ParseDatabaseTables()
         SHLIB:SetupDatabaseTables()
     end)()
 end

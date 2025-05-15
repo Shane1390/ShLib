@@ -10,14 +10,17 @@ local requests = SHLIB.Net.Requests
 local endpoints = SHLIB.Net.Endpoints
 local trans = SHLIB.Net.Trans
 
+local requestStr = SHLIB.Config.RequestString
+local timeout = SHLIB.Config.Timeout
+
 local function CreateThreadTimeout(id)
-    timer.Create(SHLIB.Net.RequestString .. id, SHLIB.Net.Timeout, 1, function()
+    timer.Create(requestStr .. id, timeout, 1, function()
         local request = requests[id]
         requests[id] = nil
 
         if request.Thread then
             print("Request timed out.")
-            coroutine.resume(request.Thread, false)
+            SHLIB:ResumeThread(request.Thread, false)
         end
     end)
 end
@@ -32,7 +35,7 @@ function SHLIB:SendRequest(name, ...)
     local syncVar = GetSyncVar()
     local endpoint = endpoints[name]
 
-    net.Start(SHLIB.Net.RequestString)
+    net.Start(requestStr)
         trans:WriteClientHeader(name, syncVar)
         if endpoint.ArgType then endpoint.ArgType.Write(...) end
     net.SendToServer()
@@ -42,17 +45,17 @@ function SHLIB:SendRequest(name, ...)
     return coroutine.yield()
 end
 
-net.Receive(SHLIB.Net.RequestString, function()
+net.Receive(requestStr, function()
     local request = trans.ReadResponseHeader()
     local tbl = requests[request.Id]
 
     if request then
         local success = request.Status == trans.Status.Success
         local ret = success and tbl.ReturnFunc and tbl.ReturnFunc()
-        coroutine.resume(tbl.Thread, success, ret)
+        SHLIB:ResumeThread(tbl.Thread, success, ret)
     end
 
-    timer.Remove(SHLIB.Net.RequestString .. request.Id)
+    timer.Remove(requestStr .. request.Id)
 end)
 
 function SHLIB.Net:RegisterRequest(name, accessLevel, argType, retType)

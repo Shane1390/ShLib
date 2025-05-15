@@ -48,6 +48,7 @@ local typeLookup = {
     Color = { Read = net.ReadColor, Write = net.WriteColor },
     Float = { Read = net.ReadFloat, Write = net.WriteFloat },
     Entity = { Read = net.ReadEntity, Write = net.WriteEntity },
+    Player = { Read = net.ReadPlayer, Write = net.WritePlayer },
     String = { Read = SERVER and ReadUserInput or net.ReadString, Write = net.WriteString },
     Vector = { Read = net.ReadVector, Write = net.WriteVector }
 }
@@ -98,6 +99,9 @@ end
 
 local function WriteSchema(keys, schema, obj)
     for _, key in ipairs(keys) do
+        if not obj[key] then error("[SHLIB] Missing object key: " .. key) end
+        if not GetType(schema[key]) then error(("[SHLIB] Unknown type: %s | %s"):format(key, schema[key])) end
+
         GetType(schema[key]).Write(obj[key])
     end
 end
@@ -125,6 +129,15 @@ function trans:RegisterPrimitiveType(name)
 
     CreateType(name, read, write)
 end
+
+-- Currently, this doesn't support lists
+function trans:RegisterDynamicType(name)
+    local read = function() return types[net.ReadString()].Read() end
+    local write = function(val) net.WriteString(val.Type) types[val.Type].Write(val.Value) end
+
+    types[name] = { Read = read, Write = write }
+end
+trans:RegisterDynamicType("Dynamic")
 
 -- Request Headers
 
