@@ -1,4 +1,4 @@
-SHLIB.SQL.Config = {
+SHLIB.Config.SQL = {
     Host = "localhost",
     Username = "",
     Password = "",

@@ -14,7 +14,7 @@ end
 function SHLIB:InitializeDatabase()
     local dbIf, dbConnectStatus
 
-    if SHLIB.SQL.Config.UseMySQL then
+    if SHLIB.Config.SQL.UseMySQL then
         dbIf = include("shlib/db/sv_mysql.lua")
         dbConnectStatus = AttemptDBConnect(dbIf)
     end
@@ -31,15 +31,13 @@ function SHLIB:InitializeDatabase()
     table.Merge(SHLIB.SQL.Connector, dbIf)
 end
 
-function SHLIB:SetupDatabaseTables()
-    for _, tbl in ipairs(tables) do
-        local status, err = self.SQL.Connector:Query(tbl.Query)
+function SHLIB:CreateDatabaseTable(name, def)
+    local status, err = self.SQL.Connector:Query(def)
 
-        if status then
-            print("Successfully registered table: " .. tbl.Name)
-        else
-            print("Error registering table " .. tbl.Name .. ": " .. err)
-        end
+    if status then
+        print("Successfully registered table: " .. name)
+    else
+        print("Error registering table " .. name .. ": " .. err)
     end
 end
 
@@ -52,14 +50,3 @@ end
 function SHLIB:AddDatabaseTable(name, query)
     table.insert(tables, { Name = name, Query = query })
 end
-
-local function Initialize()
-    SHLIB:Async(function()
-        hook.Run("SHLIB_RegisterDatabaseTables")
-
-        SHLIB:InitializeDatabase()
-        SHLIB.ORM:ParseDatabaseTables()
-        SHLIB:SetupDatabaseTables()
-    end)()
-end
-hook.Add("Initialize", "SHLIB::Initialize", Initialize)

@@ -29,7 +29,7 @@ local function HandleAsync(dbObj)
     end
 
     function dbObj:onError(err)
-        print("DB Error: " .. err)
+        print("[ShLib] DB Error: " .. err)
         SHLIB:ResumeThread(running, false, err)
     end
 

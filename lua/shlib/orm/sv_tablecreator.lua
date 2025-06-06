@@ -7,7 +7,10 @@ local orm = SHLIB.ORM
 local types = {
     INT = "INT",
     VARCHAR = function(alloc) return ("VARCHAR(%d)"):format(alloc) end,
-    BIT = "BIT"
+    CHAR = function(alloc) return ("CHAR(%d)"):format(alloc) end,
+    FLOAT = "FLOAT",
+    BIT = "BIT",
+    DATETIME = "DATETIME"
 }
 
 local tableDefinition = {}
@@ -126,40 +129,45 @@ function orm:AddTable(name, info)
     return tableDefinition:New(name)
 end
 
-local function DependenciesRegistered(register, waitlist, dependencies, name, definition)
-    for _, dependency in ipairs(dependencies) do
-        if not register[dependency] then
-            waitlist[dependency] = waitlist[dependency] or {}
-            waitlist[dependency][name] = definition
-
-            return
-        end
+local function HasUnRegisteredDependencies(dependencies, register)
+    for dep in pairs(dependencies) do
+        if not register[dep] then return true end
     end
-
-    return true
 end
 
-local function RegisterTable(register, waitlist, dependencies, name, info)
-    if dependencies and not DependenciesRegistered(register, waitlist, dependencies, name, info) then return end
+local function RegisterTable(tbl, register)
+    SHLIB:CreateDatabaseTable(tbl.Name, tbl.Definition)
+    SHLIB.QueryBuilder:RegisterType(tbl.Name, tbl.Config)
 
-    register[name] = true
-    SHLIB:CreateDatabaseTable(name, info.Definition)
-    SHLIB.QueryBuilder:RegisterType(name, info)
-
-    if not waitlist[name] then return end
-    for tblName, def in pairs(waitlist[name]) do
-        RegisterTable(register, waitlist, _, tblName, def)
-    end
+    register[tbl.Name] = true
 end
 
 function orm:ParseDatabaseTables()
+    local tbls = {}
     local register = {}
-    local waitlist = {}
 
     for name, info in pairs(self.TableDefinitions) do
-        local dependencies = table.GetKeys(info.Constraints.ForeignKeys)
-        info.Definition = table.concat({ GetDefHeader(name), GetColumns(info.Columns), GetConstraints(info), "\n)" })
+        table.insert(tbls, {
+            Name = name,
+            Dependencies = info.Constraints.ForeignKeys,
+            Definition = table.concat({ GetDefHeader(name), GetColumns(info.Columns), GetConstraints(info), "\n)" }),
+            Config = info
+        })
+    end
 
-        RegisterTable(register, waitlist, dependencies, name, info)
+    while true do
+        for _, tbl in ipairs(tbls) do
+            if register[tbl.Name] then continue end
+
+            if table.IsEmpty(tbl.Dependencies) then
+                RegisterTable(tbl, register)
+                continue
+            end
+
+            if HasUnRegisteredDependencies(tbl.Dependencies, register) then continue end
+            RegisterTable(tbl, register)
+        end
+
+        if table.Count(register) == #tbls then break end
     end
 end

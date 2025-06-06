@@ -27,5 +27,18 @@ end
 SHLIB:IncludeFolder("shlib_config")
 SHLIB:IncludeFolder("shlib")
 
--- This hook should be used to interface with ShLib
-hook.Run("SHLIB_Initialize")
+local function Initialize()
+    hook.Run("SHLIB_Initialize")
+    if CLIENT then return end
+
+    SHLIB:Async(function()
+        hook.Run("SHLIB_RegisterDatabaseTables")
+
+        SHLIB:InitializeDatabase()
+        SHLIB.ORM:ParseDatabaseTables()
+        SHLIB:SetupDatabaseTables()
+
+        hook.Run("SHLIB_DatabaseInitialized")
+    end)()
+end
+hook.Add("Initialize", "SHLIB::Initialize", Initialize)

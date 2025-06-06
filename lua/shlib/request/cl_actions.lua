@@ -15,9 +15,12 @@ end
 
 net.Receive(actionStr, function()
     local actionName = net.ReadString()
-    local action = actions[actionName]
-    local arg = action.ArgType and action.ArgType.Read()
 
+    local action = actions[actionName]
+    if not action then error("No action registered for request: " .. actionName) end
+
+    local arg = action.ArgType and action.ArgType.Read()
     if not action.Implementation then error("No implementation found for request: " .. actionName) end
+
     action.Implementation(arg)
 end)
