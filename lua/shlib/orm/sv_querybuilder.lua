@@ -57,12 +57,22 @@ end
 function baseBuilder:Delete(items)
     self.DeleteIds = {}
 
-    if self:IsListOfObjects(items) then
+    -- Singular int id delete
+    if not istable(items) then
+        table.insert(self.DeleteIds, items)
+    -- Will only succeed if each item contains the pkey - otherwise we catch lists of ints later
+    elseif self:IsListOfObjects(items) then
         for _, item in ipairs(items) do
             table.insert(self.DeleteIds, item[self.Context.Constraints.PrimaryKey])
         end
-    else
+    -- Think we've only got 1 object, make sure it matches the schema by checking for the pkey
+    elseif items[self.Context.Constraints.PrimaryKey] then
         table.insert(self.DeleteIds, items[self.Context.Constraints.PrimaryKey])
+    -- If the pkey isn't present, then the object is probably just a list of ids
+    else
+        for _, item in ipairs(items) do
+            table.insert(self.DeleteIds, item)
+        end
     end
 
     self.BuildQuery = self.BuildDelete
