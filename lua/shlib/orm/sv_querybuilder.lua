@@ -288,6 +288,11 @@ function baseBuilder:Where(arg)
     return self
 end
 
+function baseBuilder:WhereIf(condition, arg)
+    if condition then return self:Where(arg) end
+    return self
+end
+
 function baseBuilder:AddJoin(tbl, info)
     table.insert(self.JoinArgs, info.Join)
 end
@@ -309,7 +314,10 @@ function columnMeta:__tostring()
 end
 
 function columnMeta:Comparitor(val, comparitor)
-    return table.concat({ self.Name, comparitor, isstring(val) and ("'%s'"):format(val) or val }, " ")
+    return table.concat({ self.Name, comparitor,
+        isstring(val) and ("'%s'"):format(val)
+        or istable(val) and SHLIB:SQLFormat(val)
+        or val }, " ")
 end
 
 function columnMeta:Equals(val)
@@ -330,6 +338,10 @@ end
 
 function columnMeta:LessThanOrEqual(val)
     return self:Comparitor(val, "<=")
+end
+
+function columnMeta:In(vals)
+    return self:Comparitor(vals, "IN")
 end
 
 local function CreateColumnContext(columnName)

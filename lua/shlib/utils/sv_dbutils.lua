@@ -4,8 +4,9 @@ end
 
 function SHLIB:SQLFormat(values, formatter)
     local tbl = {}
+    local formattedValues = formatter and formatter(values) or values
 
-    for _, value in ipairs(formatter(values)) do
+    for _, value in ipairs(formattedValues) do
         if isstring(value) then table.insert(tbl, string.format("'%s'", value))
         else table.insert(tbl, value) end
     end
