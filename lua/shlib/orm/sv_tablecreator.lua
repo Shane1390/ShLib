@@ -78,7 +78,7 @@ for columnType, impl in pairs(types) do
     tableDefinition[columnType] = function(tblDef, ...)
         local column = isfunction(impl) and impl(...) or impl
         tblDef.TargetColumn.Type = column
-        tblDef.TargetColumn.IsString = (column:find("CHAR") ~= nil)
+        tblDef.TargetColumn.IsString = (column:find("CHAR") ~= nil or column:find("DATE") ~= nil)
 
         return tblDef
     end
