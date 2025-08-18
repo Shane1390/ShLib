@@ -20,6 +20,22 @@ function hook.AddAsync(name, label, func)
     end)
 end
 
+function timer.SimpleAsync(time, func)
+    timer.Simple(time, function()
+        SHLIB:Async(function()
+            func()
+        end)()
+    end)
+end
+
+function timer.CreateAsync(id, delay, rep, func)
+    timer.Create(id, delay, rep, function()
+        SHLIB:Async(function()
+            func()
+        end)()
+    end)
+end
+
 -- This is only for debugging
 function SHLIB:Wait(time)
     local running = coroutine.running()
