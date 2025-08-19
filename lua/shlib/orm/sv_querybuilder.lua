@@ -3,12 +3,16 @@ SHLIB.QueryBuilder = SHLIB.QueryBuilder or {}
 SHLIB.QueryBuilder.Builders = SHLIB.QueryBuilder.Builders or {}
 SHLIB.QueryBuilder.UpdateCache = SHLIB.QueryBuilder.UpdateCache or {}
 SHLIB.QueryBuilder.InsertCache = SHLIB.QueryBuilder.InsertCache or {}
+SHLIB.QueryBuilder.MergeCache = SHLIB.QueryBuilder.MergeCache or {}
 
 local connector = SHLIB.SQL.Connector
 local queryBuilder = SHLIB.QueryBuilder
 local updateCache = queryBuilder.UpdateCache
 local insertCache = queryBuilder.InsertCache
+local mergeCache = queryBuilder.MergeCache
 local dbContext = SHLIB.DbContext
+
+local DEBUG_MODE = false
 
 local baseBuilder = {}
 baseBuilder.__index = baseBuilder
@@ -116,6 +120,8 @@ function baseBuilder:GetValuesArg(obj, template)
     local value = {}
 
     for _, column in ipairs(template) do
+        if not obj[column] then table.insert(value, "NULL") continue end
+
         local str = self.Context.Columns[column].IsString and "'%s'" or "%d"
         table.insert(value, str:format(obj[column]))
     end
@@ -226,14 +232,21 @@ local function GetTempTableDef(columns)
     return table.concat(ret, ",\n    ")
 end
 
-local setTemplate = "%s.%s = InsertTemplate.%s"
-
-local function GetSetConditions(template, tableName, pKey)
+function baseBuilder:GetSetConditions(template, formatter, tableName, columnKey)
     local ret = {}
+    local constraints = self.Context.Constraints
+
+    local ignoreColumns = {}
+    if columnKey then
+        for _, col in ipairs(columnKey) do
+            ignoreColumns[col] = true
+        end
+    end
 
     for _, column in ipairs(template) do
-        if column == pKey then continue end
-        table.insert(ret, setTemplate:format(tableName, column, column))
+        if column == constraints.PrimaryKey then continue end
+        if ignoreColumns[column] then continue end
+        table.insert(ret, formatter:format(tableName, column, column))
     end
 
     return table.concat(ret, ",\n    ")
@@ -243,7 +256,7 @@ function baseBuilder:GenerateUpdateQuery(items, key)
     local context = self.Context
     local tempTable = GetTempTableDef(context.Columns)
     local isListType, objTemplate = self:GetListTypeAndTemplate(items, true)
-    local setConditions = GetSetConditions(objTemplate, self.Table, context.Constraints.PrimaryKey)
+    local setConditions = self:GetSetConditions(objTemplate, "%s.%s = InsertTemplate.%s", self.Table)
 
     local queryTemplate = updateTemplate:format(
         tempTable,
@@ -279,6 +292,73 @@ function baseBuilder:Update(items, key)
     self.UpdateItems = items
     self.UpdateKey = self:GetKey(key)
     self.BuildQuery = self.BuildUpdate
+
+    return self
+end
+
+local mergeTemplate = [[
+DROP TABLE IF EXISTS MergeTemplate;
+
+CREATE TEMPORARY TABLE MergeTemplate
+(
+    %s
+) ENGINE = MEMORY;
+
+INSERT INTO MergeTemplate (%s)
+VALUES (%s);
+
+INSERT INTO %s (%s)
+SELECT
+    %s
+FROM MergeTemplate
+ON DUPLICATE KEY UPDATE
+    %s;
+
+DROP TABLE MergeTemplate;
+]]
+
+function baseBuilder:GenerateMergeQuery(items, key)
+    local context = self.Context
+    local tempTable = GetTempTableDef(context.Columns)
+    local isListType, objTemplate = self:GetListTypeAndTemplate(items, true)
+    local setConditions = self:GetSetConditions(objTemplate, "%s.%s = MergeTemplate.%s", self.Table, self.MergeColumnKey)
+    local strTemplate = table.concat(objTemplate, ", ")
+
+    local queryTemplate = mergeTemplate:format(
+        tempTable,
+        strTemplate,
+        "%s",
+        self.Table,
+        strTemplate,
+        strTemplate,
+        setConditions
+    )
+
+    mergeCache[self.MergeKey] = {
+        QueryTemplate = queryTemplate,
+        ObjectTemplate = objTemplate,
+        IsListType = isListType
+    }
+
+    print(queryTemplate)
+    return mergeCache[self.MergeKey]
+end
+
+function baseBuilder:BuildMerge()
+    local mergeData = mergeCache[self.MergeKey] or self:GenerateMergeQuery(self.MergeItems, self.MergeKey)
+
+    local values = mergeData.IsListType
+        and self:GetValuesString(self.MergeItems, mergeData.ObjectTemplate)
+        or self:GetValueString(self.MergeItems, mergeData.ObjectTemplate)
+
+    return mergeData.QueryTemplate:format(values)
+end
+
+function baseBuilder:Merge(items, columnKey, key)
+    self.MergeItems = items
+    self.MergeKey = self:GetKey(key)
+    self.MergeColumnKey = columnKey
+    self.BuildQuery = self.BuildMerge
 
     return self
 end
@@ -387,5 +467,16 @@ function queryBuilder:RegisterType(name, info)
         setmetatable(instance, newBuilder)
 
         return instance
+    end
+end
+
+if DEBUG_MODE then
+    table.Empty(queryBuilder.Builders)
+    table.Empty(queryBuilder.UpdateCache)
+    table.Empty(queryBuilder.InsertCache)
+    table.Empty(queryBuilder.MergeCache)
+
+    for name, info in pairs(SHLIB.ORM.TableDefinitions) do
+        queryBuilder:RegisterType(name, info)
     end
 end
